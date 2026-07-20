@@ -5,6 +5,8 @@
 // - Для перегляду NMEA підключіть USB-TTL або інший UART-пристрій
 
 #define PWM_PIN D5
+#define LED1_PIN D2   // вільний пін Wemos D1 Mini (GPIO4)
+#define LED2_PIN D1   // вільний пін Wemos D1 Mini (GPIO5)
 
 String appendNmeaChecksum(String sentence) {
   byte checksum = 0;
@@ -79,8 +81,22 @@ bool readPwm(float &frequencyHz, float &dutyPercent) {
   return true;
 }
 
+void setLedStateFromPwm(float pwmValue) {
+  int pwmValueInt = (int)round(pwmValue);
+
+  bool led1Active = (pwmValueInt >= 400 && pwmValueInt <= 1100);
+  bool led2Active = (pwmValueInt >= 1800 && pwmValueInt <= 2100);
+
+  digitalWrite(LED1_PIN, led1Active ? HIGH : LOW);
+  digitalWrite(LED2_PIN, led2Active ? HIGH : LOW);
+}
+
 void setup() {
   pinMode(PWM_PIN, INPUT);
+  pinMode(LED1_PIN, OUTPUT);
+  pinMode(LED2_PIN, OUTPUT);
+  digitalWrite(LED1_PIN, LOW);
+  digitalWrite(LED2_PIN, LOW);
   Serial.begin(115200);
   delay(1000);
   Serial.println("ESP8266 PWM -> NMEA GPRMC started");
@@ -104,12 +120,16 @@ void loop() {
     Serial.print(duty, 2);
     Serial.println(" %");
 
+    setLedStateFromPwm(freqHz);
+
     String gga = buildNmeaGga(latitudeDeg, longitudeDeg, true);
     String rmc = buildNmeaRmc(latitudeDeg, longitudeDeg, true);
 
     Serial.println(gga);
     Serial.println(rmc);
   } else {
+    digitalWrite(LED1_PIN, LOW);
+    digitalWrite(LED2_PIN, LOW);
     Serial.println("PWM signal not detected");
   }
 
