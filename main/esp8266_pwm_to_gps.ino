@@ -81,11 +81,9 @@ bool readPwm(float &frequencyHz, float &dutyPercent) {
   return true;
 }
 
-void setLedStateFromPwm(float pwmValue) {
-  int pwmValueInt = (int)round(pwmValue);
-
-  bool led1Active = (pwmValueInt >= 400 && pwmValueInt <= 1100);
-  bool led2Active = (pwmValueInt >= 1800 && pwmValueInt <= 2100);
+void setLedStateFromDuty(float dutyPercent) {
+  bool led1Active = (dutyPercent >= 4.0f && dutyPercent <= 6.0f);
+  bool led2Active = (dutyPercent >= 9.0f && dutyPercent <= 11.0f);
 
   digitalWrite(LED1_PIN, led1Active ? HIGH : LOW);
   digitalWrite(LED2_PIN, led2Active ? HIGH : LOW);
@@ -104,23 +102,23 @@ void setup() {
 
 void loop() {
   float freqHz = 0.0f;
-  float duty = 0.0f;
+  float dutyPercent = 0.0f;
 
-  bool signalPresent = readPwm(freqHz, duty);
+  bool signalPresent = readPwm(freqHz, dutyPercent);
 
   if (signalPresent) {
     // Простий переклад PWM у «фейкові координати».
     // Лат/лон перетворюються у формат NMEA, сумісний з GPS-пристроями.
-    float latitudeDeg = 30.0f + duty * 0.02f;          // приклад: 50% -> 30.50°
-    float longitudeDeg = 0.0f + (freqHz / 10000.0f);   // приклад: 1000 Hz -> 0.10°
+    float latitudeDeg = 30.0f + dutyPercent * 0.02f;    // приклад: 5% -> 30.10°, 10% -> 30.20°
+    float longitudeDeg = 0.0f + dutyPercent * 0.01f;    // приклад: 5% -> 0.05°, 10% -> 0.10°
 
     Serial.print("PWM: freq=");
     Serial.print(freqHz, 1);
     Serial.print(" Hz, duty=");
-    Serial.print(duty, 2);
+    Serial.print(dutyPercent, 2);
     Serial.println(" %");
 
-    setLedStateFromPwm(freqHz);
+    setLedStateFromDuty(dutyPercent);
 
     String gga = buildNmeaGga(latitudeDeg, longitudeDeg, true);
     String rmc = buildNmeaRmc(latitudeDeg, longitudeDeg, true);
